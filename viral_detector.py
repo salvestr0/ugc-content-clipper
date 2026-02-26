@@ -229,7 +229,7 @@ def save_clip_metadata(clips: list, video_metadata: dict, output_path: str):
         "clips": clips,
     }
     
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     
     console.print(f"[green]💾 Clip metadata saved:[/green] {output_path}")

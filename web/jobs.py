@@ -45,7 +45,7 @@ def _load_video_info_from_cache(video_path: Path, video_id: str, url: str, sourc
     """Load video metadata from yt-dlp's saved .info.json, with fallback."""
     info_json = source_dir / f"{video_id}.info.json"
     if info_json.exists():
-        with open(info_json) as f:
+        with open(info_json, encoding="utf-8") as f:
             raw = json.load(f)
         return {
             "filepath": str(video_path),
@@ -123,7 +123,7 @@ async def _run_stages(db, job_id: str, url: str, config: dict):
     transcript_path = metadata_dir / f"{video_id}_transcript.json"
     if transcript_path.exists():
         console.print(f"[yellow]⚡ Cached transcript found, skipping transcription:[/yellow] {transcript_path}")
-        with open(transcript_path) as f:
+        with open(transcript_path, encoding="utf-8") as f:
             transcript = json.load(f)
     else:
         transcript = await asyncio.to_thread(transcribe_video, video_path, model_size="base")
@@ -144,7 +144,7 @@ async def _run_stages(db, job_id: str, url: str, config: dict):
 
     if scenes_path.exists():
         console.print(f"[yellow]⚡ Cached scenes found, skipping scene detection:[/yellow] {scenes_path}")
-        with open(scenes_path) as f:
+        with open(scenes_path, encoding="utf-8") as f:
             scenes = json.load(f)
     else:
         scenes = await asyncio.to_thread(
@@ -152,19 +152,19 @@ async def _run_stages(db, job_id: str, url: str, config: dict):
             threshold=scene_config.get("threshold", 30.0),
             min_scene_length=scene_config.get("min_scene_length", 1.0),
         )
-        with open(scenes_path, "w") as f:
+        with open(scenes_path, "w", encoding="utf-8") as f:
             json.dump(scenes, f)
 
     if audio_energy_path.exists():
         console.print(f"[yellow]⚡ Cached audio energy found:[/yellow] {audio_energy_path}")
-        with open(audio_energy_path) as f:
+        with open(audio_energy_path, encoding="utf-8") as f:
             audio_energy = json.load(f)
     else:
         audio_energy = await asyncio.to_thread(
             analyze_audio_energy, video_path, video_info["duration"]
         )
         if audio_energy:
-            with open(audio_energy_path, "w") as f:
+            with open(audio_energy_path, "w", encoding="utf-8") as f:
                 json.dump(audio_energy, f)
 
     visual_energy = compute_energy_map(scenes, video_duration=video_info["duration"])
@@ -180,7 +180,7 @@ async def _run_stages(db, job_id: str, url: str, config: dict):
     clips_path = metadata_dir / f"{video_id}_clips.json"
     if clips_path.exists():
         console.print(f"[yellow]⚡ Cached clips found, skipping viral detection:[/yellow] {clips_path}")
-        with open(clips_path) as f:
+        with open(clips_path, encoding="utf-8") as f:
             clips = json.load(f)["clips"]
     else:
         clips = await asyncio.to_thread(

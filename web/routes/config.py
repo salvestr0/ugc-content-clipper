@@ -50,7 +50,7 @@ async def save_config(request: Request):
 
     # Write to YAML
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(CONFIG_PATH, "w") as f:
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         yaml.dump(config, f, default_flow_style=False)
 
     return HTMLResponse('<p style="color:var(--pico-color-green-500);">Config saved.</p>')

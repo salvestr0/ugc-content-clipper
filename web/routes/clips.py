@@ -90,7 +90,7 @@ async def rerender_clip(request: Request, clip_id: str):
         transcript_path = Path("output/metadata") / f"{job['video_id']}_transcript.json"
         words = []
         if transcript_path.exists():
-            with open(transcript_path) as f:
+            with open(transcript_path, encoding="utf-8") as f:
                 transcript = json.load(f)
                 words = transcript.get("words", [])
 

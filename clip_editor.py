@@ -217,11 +217,11 @@ def create_clip(
     if config.get("captions", {}).get("enabled", True):
         ass_content = generate_ass_captions(words, start, end, config)
         if ass_content:
-            ass_path = output_dir / f"_temp_subs_{rank}.ass"
+            # Write to CWD with a relative path — avoids Windows drive-letter
+            # colon escaping issues with ffmpeg-python's filter graph builder.
+            ass_path = Path(f"_temp_subs_{rank}.ass")
             ass_path.write_text(ass_content, encoding="utf-8")
-            # Escape path for FFmpeg filter syntax (colon is a delimiter)
-            escaped = str(ass_path.absolute()).replace("\\", "/").replace(":", "\\:")
-            v = v.filter("ass", escaped)
+            v = v.filter("ass", str(ass_path))
 
     # Encode
     out_config = config.get("output", {})

@@ -49,7 +49,7 @@ def load_config(config_path: str = None) -> dict:
         config_path = Path(config_path)
 
     if config_path.exists():
-        with open(config_path) as f:
+        with open(config_path, encoding="utf-8") as f:
             user_config = yaml.safe_load(f) or {}
         # Deep merge
         for key, value in user_config.items():

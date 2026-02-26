@@ -114,7 +114,7 @@ def save_transcript(transcript_data: dict, output_path: str):
     """Save transcript data to JSON."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(transcript_data, f, indent=2)
     console.print(f"[green]💾 Transcript saved:[/green] {output_path}")
 
