@@ -1,0 +1,35 @@
+{% set s = job.status %}
+{% if s == "completed" %}
+  {% set dot_cls = "dot-green" %}
+  {% set badge_cls = "badge-green" %}
+{% elif s == "failed" %}
+  {% set dot_cls = "dot-red" %}
+  {% set badge_cls = "badge-red" %}
+{% elif s == "queued" %}
+  {% set dot_cls = "dot-muted" %}
+  {% set badge_cls = "badge-muted" %}
+{% else %}
+  {% set dot_cls = "dot-blue" %}
+  {% set badge_cls = "badge-blue" %}
+{% endif %}
+
+{% set stage_num = {"queued": 0, "downloading": 1, "transcribing": 2, "analyzing_scenes": 3, "detecting_viral": 4, "editing_clips": 5, "completed": 6}.get(s, 0) %}
+{% set pct = (stage_num / 6 * 100)|int %}
+
+<a href="/jobs/{{ job.id }}" class="job-item" id="job-{{ job.id }}">
+    <span class="status-dot {{ dot_cls }}"></span>
+    <span class="job-item-meta">
+        <span class="job-item-title">{{ job.video_title or job.url }}</span>
+        <span class="job-item-sub">
+            {% if job.channel %}{{ job.channel }} &middot; {% endif %}{{ job.created_at[:16].replace("T", " ") }}
+        </span>
+        {% if s not in ("completed", "failed") %}
+        <div class="job-progress-bar mt-2">
+            <div class="job-progress-fill" style="width: {{ pct }}%"></div>
+        </div>
+        {% endif %}
+    </span>
+    <span class="job-item-right">
+        <span class="badge {{ badge_cls }}">{{ s.replace("_", " ") }}</span>
+    </span>
+</a>

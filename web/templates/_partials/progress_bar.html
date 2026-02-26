@@ -1,0 +1,47 @@
+{% set stages = ["Queued", "Downloading", "Transcribing", "Scenes", "Viral AI", "Editing"] %}
+{% set stage_icons = ["○", "↓", "♪", "▦", "✦", "✂"] %}
+{% set status_map = {
+    "queued": 0, "downloading": 1, "transcribing": 2,
+    "analyzing_scenes": 3, "detecting_viral": 4, "editing_clips": 5,
+    "completed": 6, "failed": -1
+} %}
+{% set current = status_map.get(job.status, 0) %}
+
+{% if job.status == "failed" %}
+<div class="error-block mb-4">
+    <strong>Pipeline failed</strong> — {{ job.error or "Unknown error" }}
+</div>
+{% endif %}
+
+<div class="pipeline">
+    {% for stage in stages %}
+    {% set idx = loop.index0 %}
+    {% if job.status == "failed" %}
+      {% set step_cls = "failed" if current == idx else ("done" if idx < current else "") %}
+    {% elif current > idx %}
+      {% set step_cls = "done" %}
+    {% elif current == idx and job.status != "completed" %}
+      {% set step_cls = "active" %}
+    {% else %}
+      {% set step_cls = "" %}
+    {% endif %}
+    <div class="pipeline-step {{ step_cls }}">
+        <div class="pipeline-dot">
+            {% if step_cls == "done" %}✓{% else %}{{ stage_icons[idx] }}{% endif %}
+        </div>
+        <span class="pipeline-step-label">{{ stage }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+{% if job.status == "completed" %}
+<div class="flex items-center gap-2 mt-3">
+    <span class="status-dot dot-green"></span>
+    <span class="text-muted" style="font-size:.875rem;">Completed</span>
+</div>
+{% elif job.status != "failed" %}
+<div class="flex items-center gap-2 mt-3">
+    <span class="status-dot dot-blue"></span>
+    <span class="text-muted" style="font-size:.875rem;">{{ job.status.replace("_", " ").title() }}…</span>
+</div>
+{% endif %}

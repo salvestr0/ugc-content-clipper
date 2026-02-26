@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ job.video_title or "Processing" }} — Viral Clipper{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="mb-6">
+        <h2 class="truncate">{{ job.video_title or "Processing…" }}</h2>
+        <p class="text-muted mt-2" style="font-size:.9rem;">
+            {% if job.channel %}<span>{{ job.channel }}</span> &middot; {% endif %}
+            <a href="{{ job.url }}" target="_blank" class="text-dim">{{ job.url[:60] }}{% if job.url|length > 60 %}…{% endif %}</a>
+        </p>
+    </div>
+
+    <div class="card mb-6">
+        <div class="card-body">
+            <div id="progress-area"
+                 {% if job.status not in ("completed", "failed") %}
+                 hx-ext="sse"
+                 sse-connect="/api/jobs/{{ job.id }}/progress"
+                 sse-swap="progress"
+                 hx-swap="innerHTML"
+                 {% endif %}>
+                {% include "_partials/progress_bar.html" %}
+            </div>
+        </div>
+    </div>
+
+    {% if job.status == "completed" and clips %}
+    <div class="section">
+        <div class="section-header mb-4">
+            <h3>Clips <span class="text-dim font-medium">({{ clips|length }})</span></h3>
+            <a href="/jobs/{{ job.id }}/clips" class="btn btn-ghost btn-sm">Review all →</a>
+        </div>
+        <div class="clip-grid">
+            {% for clip in clips[:6] %}
+                {% include "_partials/clip_card.html" %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <details>
+        <summary>Job details</summary>
+        <table style="margin-top: 4px;">
+            <tr><td class="text-dim" style="width:120px;">ID</td><td><code>{{ job.id }}</code></td></tr>
+            <tr><td class="text-dim">Status</td><td>{{ job.status }}</td></tr>
+            {% if job.duration_seconds %}
+            <tr><td class="text-dim">Duration</td><td>{{ (job.duration_seconds // 60)|int }}m {{ (job.duration_seconds % 60)|int }}s</td></tr>
+            {% endif %}
+            <tr><td class="text-dim">Created</td><td class="font-mono">{{ job.created_at[:19].replace("T", " ") }}</td></tr>
+            <tr><td class="text-dim">Updated</td><td class="font-mono">{{ job.updated_at[:19].replace("T", " ") }}</td></tr>
+        </table>
+    </details>
+
+    {% if job.status not in ("completed", "failed") %}
+    <div class="mt-4">
+        <form hx-delete="/api/jobs/{{ job.id }}"
+              hx-confirm="Cancel this job and delete all files?"
+              hx-target="body">
+            <button class="btn btn-danger btn-sm">Cancel job</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

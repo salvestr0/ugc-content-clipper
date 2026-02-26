@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Clips — {{ job.video_title or "Job" }} — Viral Clipper{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="section-header mb-6">
+        <div>
+            <h2>Clip Review</h2>
+            <p class="text-muted mt-2" style="font-size:.875rem;">{{ job.video_title or job.url }} &middot; {{ clips|length }} clips</p>
+        </div>
+        <a href="/jobs/{{ job.id }}" class="btn btn-ghost btn-sm">← Back to job</a>
+    </div>
+
+    <div x-data="{ selected: [] }">
+        <div class="flex items-center gap-3 mb-6">
+            <button class="btn btn-green btn-sm"
+                    @click="selected.forEach(id => document.querySelector('[data-approve-id=\'' + id + '\']')?.click()); selected=[]">
+                Approve selected
+            </button>
+            <button class="btn btn-danger btn-sm"
+                    @click="selected.forEach(id => document.querySelector('[data-reject-id=\'' + id + '\']')?.click()); selected=[]">
+                Reject selected
+            </button>
+            <span class="text-dim" style="font-size:.8125rem;" x-show="selected.length > 0">
+                <span x-text="selected.length"></span> selected
+            </span>
+        </div>
+
+        <div class="clip-grid">
+            {% for clip in clips %}
+            {% set score = clip.viral_score or 0 %}
+            {% if score >= 80 %}
+              {% set score_cls = "score-fire" %}
+            {% elif score >= 60 %}
+              {% set score_cls = "score-bolt" %}
+            {% else %}
+              {% set score_cls = "score-light" %}
+            {% endif %}
+            {% set trigger_colors = {
+                "shock": "badge-red", "outrage": "badge-red", "surprise": "badge-red",
+                "humor": "badge-amber", "relatability": "badge-blue",
+                "aspiration": "badge-violet", "motivation": "badge-violet", "curiosity": "badge-blue"
+            } %}
+            {% set trigger_cls = trigger_colors.get(clip.emotional_trigger|lower, "badge-muted") %}
+
+            <div class="clip-card status-{{ clip.status or 'pending' }}" id="clip-{{ clip.id }}">
+                <div class="clip-video-wrap">
+                    {% if clip.output_path %}
+                    <video controls preload="none">
+                        <source src="/clips/{{ clip.output_path | replace('\\', '/') | replace('output/clips/', '') }}" type="video/mp4">
+                    </video>
+                    {% else %}
+                    <div class="clip-no-video">No preview</div>
+                    {% endif %}
+                    <span class="clip-score-overlay score-badge {{ score_cls }}">{{ score }}</span>
+                    <span class="clip-rank-overlay">#{{ clip.rank }}</span>
+                </div>
+
+                <div class="clip-body">
+                    <label class="checkbox-label" style="margin-bottom:0; padding:0;">
+                        <input type="checkbox"
+                               :value="'{{ clip.id }}'"
+                               @change="$event.target.checked ? selected.push('{{ clip.id }}') : selected = selected.filter(x => x !== '{{ clip.id }}')">
+                        <span class="clip-hook" style="-webkit-line-clamp:1;">{{ clip.hook }}</span>
+                    </label>
+                    <div class="clip-why">{{ clip.why_viral }}</div>
+                    <div class="clip-meta">
+                        <span class="badge {{ trigger_cls }}">{{ clip.emotional_trigger }}</span>
+                        <span class="text-dim" style="font-size:.75rem;">
+                            {{ "%.1f"|format(clip.start_seconds) }}s → {{ "%.1f"|format(clip.end_seconds) }}s
+                            ({{ "%.0f"|format(clip.duration) }}s)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="clip-footer">
+                    <button class="btn {{ 'btn-green active' if clip.status == 'approved' else 'btn-green' }}"
+                            :data-approve-id="'{{ clip.id }}'"
+                            data-approve-id="{{ clip.id }}"
+                            hx-patch="/api/clips/{{ clip.id }}"
+                            hx-vals='{"status": "approved"}'
+                            hx-target="#clip-{{ clip.id }}"
+                            hx-swap="outerHTML">
+                        ✓
+                    </button>
+                    <button class="btn {{ 'btn-danger active' if clip.status == 'rejected' else 'btn-danger' }}"
+                            :data-reject-id="'{{ clip.id }}'"
+                            data-reject-id="{{ clip.id }}"
+                            hx-patch="/api/clips/{{ clip.id }}"
+                            hx-vals='{"status": "rejected"}'
+                            hx-target="#clip-{{ clip.id }}"
+                            hx-swap="outerHTML">
+                        ✕
+                    </button>
+                    <a href="/clips/{{ clip.id }}/edit" class="btn btn-ghost">Edit</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

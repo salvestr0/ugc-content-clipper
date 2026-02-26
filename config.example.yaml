@@ -1,0 +1,43 @@
+# Viral Clipper Configuration
+# Copy this to config.yaml and fill in your API key
+
+anthropic:
+  api_key: "YOUR_ANTHROPIC_API_KEY_HERE"
+  model: "claude-sonnet-4-20250514"  # Good balance of speed/quality for clip detection
+
+# Source channels to monitor (YouTube channel URLs or handles)
+watchlist:
+  - "https://www.youtube.com/@tjr"
+  - "https://www.youtube.com/@brezscales"
+  # Add more channels here
+
+# Clip detection settings
+clips:
+  min_duration: 15        # Minimum clip length in seconds
+  max_duration: 60        # Maximum clip length in seconds
+  target_duration: 35     # Ideal clip length (AI will aim for this)
+  clips_per_video: 5      # How many clips to extract per video
+  
+# Video output settings
+output:
+  resolution: "1080x1920" # 9:16 vertical
+  fps: 30
+  video_bitrate: "5M"
+  audio_bitrate: "192k"
+
+# Caption style
+captions:
+  enabled: true
+  font: "Arial-Bold"
+  font_size: 22
+  primary_color: "&H00FFFFFF"   # White
+  outline_color: "&H00000000"   # Black outline
+  outline_width: 3
+  position: "center"            # center, bottom
+  words_per_group: 3            # Words highlighted at a time
+  highlight_color: "&H0000FFFF" # Yellow highlight for active word
+
+# Scene detection sensitivity
+scene_detection:
+  threshold: 30.0         # Lower = more sensitive (detects more scene changes)
+  min_scene_length: 1.0   # Minimum seconds between scene changes

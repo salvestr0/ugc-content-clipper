@@ -1,0 +1,33 @@
+# --- SECRETS — never commit ---
+config/config.yaml
+cookies.txt
+.env
+*.env
+
+# --- Generated output ---
+output/
+data/
+
+# --- Python cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+
+# --- Claude workspace ---
+.claude/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Editors ---
+.vscode/
+.idea/
+*.swp

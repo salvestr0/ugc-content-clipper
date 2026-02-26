@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Watchlist — Viral Clipper{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="mb-6">
+        <h2>Channel Watchlist</h2>
+        <p class="text-muted mt-2" style="font-size:.875rem;">Channels are polled automatically for new uploads.</p>
+    </div>
+
+    <div class="card mb-6">
+        <div class="card-body">
+            <form hx-post="/api/watchlist"
+                  hx-target="#watchlist-body"
+                  hx-swap="beforeend"
+                  hx-on::after-request="this.reset()">
+                <div class="flex gap-3 items-center" style="flex-wrap:wrap;">
+                    <div class="field" style="flex:2; min-width:240px; margin-bottom:0;">
+                        <label>Channel URL</label>
+                        <input type="url" name="channel_url"
+                               placeholder="https://youtube.com/@channel" required>
+                    </div>
+                    <div class="field" style="flex:1; min-width:160px; margin-bottom:0;">
+                        <label>Name <span class="text-dim">(optional)</span></label>
+                        <input type="text" name="channel_name" placeholder="e.g. My Fave Creator">
+                    </div>
+                    <div style="padding-top:22px;">
+                        <button type="submit" class="btn btn-primary">Add channel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        {% if channels %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Channel</th>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Last checked</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="watchlist-body">
+                {% for ch in channels %}
+                <tr id="wl-{{ ch.id }}">
+                    <td class="font-medium">{{ ch.channel_name or "—" }}</td>
+                    <td>
+                        <a href="{{ ch.channel_url }}" target="_blank" class="text-muted truncate"
+                           style="font-size:.8125rem; max-width:280px; display:block;">
+                            {{ ch.channel_url }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if ch.enabled %}
+                        <span class="badge badge-green">Active</span>
+                        {% else %}
+                        <span class="badge badge-muted">Paused</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-dim" style="font-size:.8125rem;">
+                        {{ ch.last_checked_at[:16].replace("T", " ") if ch.last_checked_at else "Never" }}
+                    </td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button class="btn btn-ghost btn-sm"
+                                    hx-post="/api/watchlist/{{ ch.id }}/check"
+                                    hx-target="#wl-{{ ch.id }}"
+                                    hx-swap="outerHTML">
+                                Check now
+                            </button>
+                            <button class="btn btn-danger btn-sm"
+                                    hx-delete="/api/watchlist/{{ ch.id }}"
+                                    hx-target="#wl-{{ ch.id }}"
+                                    hx-swap="delete"
+                                    hx-confirm="Remove this channel?">
+                                Remove
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            No channels yet
+            <p>Add a YouTube channel above to start monitoring it.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

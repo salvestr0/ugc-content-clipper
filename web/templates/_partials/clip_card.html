@@ -1,0 +1,49 @@
+{% set score = clip.viral_score or 0 %}
+{% if score >= 80 %}
+  {% set score_cls = "score-fire" %}
+{% elif score >= 60 %}
+  {% set score_cls = "score-bolt" %}
+{% else %}
+  {% set score_cls = "score-light" %}
+{% endif %}
+
+{% set trigger_colors = {
+    "shock": "badge-red",
+    "outrage": "badge-red",
+    "surprise": "badge-red",
+    "humor": "badge-amber",
+    "relatability": "badge-blue",
+    "aspiration": "badge-violet",
+    "motivation": "badge-violet",
+    "curiosity": "badge-blue"
+} %}
+{% set trigger_cls = trigger_colors.get(clip.emotional_trigger|lower, "badge-muted") %}
+
+<div class="clip-card status-{{ clip.status or 'pending' }}" id="clip-{{ clip.id }}">
+    <div class="clip-video-wrap">
+        {% if clip.output_path %}
+        {% set video_url = "/clips/" + (clip.output_path | replace('\\', '/') | replace('output/clips/', '')) %}
+        {% set thumb_url = video_url | replace('.mp4', '_thumb.jpg') %}
+        <video controls preload="none" poster="{{ thumb_url }}">
+            <source src="{{ video_url }}" type="video/mp4">
+        </video>
+        {% else %}
+        <div class="clip-no-video">No preview yet</div>
+        {% endif %}
+        <span class="clip-score-overlay score-badge {{ score_cls }}">{{ score }}</span>
+        <span class="clip-rank-overlay">#{{ clip.rank }}</span>
+    </div>
+
+    <div class="clip-body">
+        <div class="clip-hook">{{ clip.hook }}</div>
+        <div class="clip-why">{{ clip.why_viral }}</div>
+        <div class="clip-meta">
+            <span class="badge {{ trigger_cls }}">{{ clip.emotional_trigger }}</span>
+            <span class="text-dim" style="font-size:.75rem;">{{ "%.0f"|format(clip.duration) }}s</span>
+        </div>
+    </div>
+
+    <div class="clip-footer">
+        <a href="/clips/{{ clip.id }}/edit" class="btn btn-ghost">Edit</a>
+    </div>
+</div>
