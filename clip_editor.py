@@ -2,12 +2,10 @@
 
 import subprocess
 import json
-import io
 from pathlib import Path
 from rich.console import Console
 
 import ffmpeg
-from PIL import Image
 
 console = Console()
 
@@ -109,48 +107,6 @@ def _seconds_to_ass_time(seconds: float) -> str:
     return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
 
-def generate_thumbnail(
-    video_path: str,
-    start_seconds: float,
-    output_path: str,
-) -> str | None:
-    """
-    Extract a thumbnail frame using ffmpeg-python and process with Pillow.
-    Saves a 270x480 JPEG (9:16) alongside the clip.
-    Returns the thumbnail path, or None on failure.
-    """
-    thumb_path = str(output_path).replace(".mp4", "_thumb.jpg")
-    seek_time = start_seconds + 2.0  # skip 2s in for a better frame
-
-    try:
-        out, _ = (
-            ffmpeg
-            .input(video_path, ss=seek_time)
-            .output("pipe:", vframes=1, format="image2", vcodec="mjpeg")
-            .run(capture_stdout=True, capture_stderr=True)
-        )
-
-        img = Image.open(io.BytesIO(out))
-        w, h = img.size
-
-        # Crop to 9:16 from centre
-        target_aspect = 9 / 16
-        if w / h > target_aspect:
-            new_w = int(h * target_aspect)
-            left = (w - new_w) // 2
-            img = img.crop((left, 0, left + new_w, h))
-        else:
-            new_h = int(w / target_aspect)
-            top = (h - new_h) // 2
-            img = img.crop((0, top, w, top + new_h))
-
-        img = img.resize((270, 480), Image.LANCZOS)
-        img.save(thumb_path, "JPEG", quality=85)
-        return thumb_path
-
-    except Exception as e:
-        console.print(f"[yellow]⚠️  Thumbnail generation failed: {e}[/yellow]")
-        return None
 
 
 def create_clip(
@@ -250,9 +206,6 @@ def create_clip(
             ass_path.unlink()
 
     console.print(f"[green]✅ Clip saved:[/green] {output_path}")
-
-    # Generate thumbnail
-    generate_thumbnail(video_path, start, str(output_path))
 
     return str(output_path)
 
