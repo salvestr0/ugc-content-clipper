@@ -1,5 +1,6 @@
 """Configuration loader for Viral Clipper."""
 
+import os
 import yaml
 from pathlib import Path
 
@@ -57,5 +58,10 @@ def load_config(config_path: str = None) -> dict:
                 config[key].update(value)
             else:
                 config[key] = value
+
+    # Env var takes precedence over config file
+    env_key = os.environ.get("ANTHROPIC_API_KEY")
+    if env_key:
+        config["anthropic"]["api_key"] = env_key
 
     return config

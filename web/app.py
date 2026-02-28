@@ -1,10 +1,15 @@
 """FastAPI application factory for Viral Clipper Web UI."""
 
+import base64
+import os
 import mimetypes
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 # Ensure correct MIME types are registered regardless of OS/registry state.
 # On some Windows systems the registry maps .css to text/plain, which causes
@@ -21,9 +26,47 @@ STATIC_DIR = WEB_DIR / "static"
 PROJECT_ROOT = WEB_DIR.parent
 OUTPUT_DIR = PROJECT_ROOT / "output"
 
+# Routes that don't require authentication (static assets)
+_PUBLIC_PREFIXES = ("/app.css", "/app.js", "/static/", "/clips/", "/source/")
+
+
+class BasicAuthMiddleware(BaseHTTPMiddleware):
+    """HTTP Basic Auth gate for the web UI."""
+
+    def __init__(self, app, username: str, password: str):
+        super().__init__(app)
+        self._username = username
+        self._password = password
+
+    async def dispatch(self, request: Request, call_next):
+        # Skip auth for static assets
+        path = request.url.path
+        if any(path.startswith(p) for p in _PUBLIC_PREFIXES):
+            return await call_next(request)
+
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
+                supplied_user, supplied_pass = decoded.split(":", 1)
+                if supplied_user == self._username and supplied_pass == self._password:
+                    return await call_next(request)
+            except Exception:
+                pass
+
+        return Response(
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="Viral Clipper"'},
+            content="Unauthorized",
+        )
+
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Viral Clipper", docs_url="/docs")
+
+    username = os.environ.get("CLIPPER_USER", "admin")
+    password = os.environ.get("CLIPPER_PASS", "clipper")
+    app.add_middleware(BasicAuthMiddleware, username=username, password=password)
 
     @app.get("/app.css")
     async def serve_css():

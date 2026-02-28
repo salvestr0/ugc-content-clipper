@@ -1,5 +1,6 @@
 """Module 1: Source Ingestion — Download videos from YouTube via yt-dlp."""
 
+import re
 import subprocess
 import json
 from pathlib import Path
@@ -7,9 +8,20 @@ from rich.console import Console
 
 console = Console()
 
+_YOUTUBE_URL_RE = re.compile(
+    r'^https://(www\.youtube\.com/|m\.youtube\.com/|youtu\.be/|www\.youtube\.com/@)'
+)
+
+
+def _validate_youtube_url(url: str) -> None:
+    """Raise ValueError if url is not a recognisable YouTube URL."""
+    if not _YOUTUBE_URL_RE.match(url):
+        raise ValueError(f"Invalid YouTube URL: {url!r}")
+
 
 def get_video_info(url: str) -> dict:
     """Get video metadata without downloading."""
+    _validate_youtube_url(url)
     cmd = [
         "yt-dlp",
         "--dump-json",
@@ -28,13 +40,14 @@ def get_video_info(url: str) -> dict:
 def download_video(url: str, output_dir: str = "output/source") -> dict:
     """
     Download a YouTube video.
-    
+
     Returns dict with:
         - filepath: path to downloaded video
         - title: video title
         - duration: video duration in seconds
         - channel: channel name
     """
+    _validate_youtube_url(url)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -97,6 +110,7 @@ def download_video(url: str, output_dir: str = "output/source") -> dict:
 
 def get_latest_videos(channel_url: str, count: int = 3) -> list[str]:
     """Get URLs of the latest N videos from a channel."""
+    _validate_youtube_url(channel_url)
     cmd = [
         "yt-dlp",
         "--flat-playlist",

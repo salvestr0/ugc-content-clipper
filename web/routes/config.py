@@ -14,7 +14,10 @@ CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "config.yaml"
 
 @router.get("/config")
 async def get_config():
-    return load_config()
+    import copy
+    config = copy.deepcopy(load_config())
+    config.setdefault("anthropic", {})["api_key"] = "***"
+    return config
 
 
 @router.put("/config")

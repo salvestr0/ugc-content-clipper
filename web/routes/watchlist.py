@@ -1,6 +1,7 @@
 """Watchlist API routes — CRUD for monitored channels."""
 
 import asyncio
+import html
 import json
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -44,21 +45,25 @@ async def add_channel(request: Request):
     # Return a table row for htmx
     ch = next((c for c in channels if c["id"] == wid), None)
     if ch:
+        ch_id = html.escape(ch['id'])
+        ch_name = html.escape(ch['channel_name'] or '—')
+        ch_url = html.escape(ch['channel_url'])
+        ch_url_short = html.escape(ch['channel_url'][:40])
         return HTMLResponse(f"""
-        <tr id="wl-{ch['id']}">
-            <td>{ch['channel_name'] or '—'}</td>
-            <td><a href="{ch['channel_url']}" target="_blank">{ch['channel_url'][:40]}...</a></td>
+        <tr id="wl-{ch_id}">
+            <td>{ch_name}</td>
+            <td><a href="{ch_url}" target="_blank">{ch_url_short}...</a></td>
             <td>Yes</td>
             <td>Never</td>
             <td>
                 <fieldset role="group">
                     <button class="outline small"
-                            hx-post="/api/watchlist/{ch['id']}/check"
-                            hx-target="#wl-{ch['id']}"
+                            hx-post="/api/watchlist/{ch_id}/check"
+                            hx-target="#wl-{ch_id}"
                             hx-swap="outerHTML">Check Now</button>
                     <button class="outline secondary small"
-                            hx-delete="/api/watchlist/{ch['id']}"
-                            hx-target="#wl-{ch['id']}"
+                            hx-delete="/api/watchlist/{ch_id}"
+                            hx-target="#wl-{ch_id}"
                             hx-swap="delete"
                             hx-confirm="Remove this channel?">Remove</button>
                 </fieldset>
@@ -110,22 +115,26 @@ async def check_channel(wid: str):
     finally:
         await db.close()
 
+    ch_id = html.escape(ch['id'])
+    ch_name = html.escape(ch['channel_name'] or '—')
+    ch_url = html.escape(ch['channel_url'])
+    ch_url_short = html.escape(ch['channel_url'][:40])
     return HTMLResponse(f"""
-    <tr id="wl-{ch['id']}">
-        <td>{ch['channel_name'] or '—'}</td>
-        <td><a href="{ch['channel_url']}" target="_blank">{ch['channel_url'][:40]}...</a></td>
+    <tr id="wl-{ch_id}">
+        <td>{ch_name}</td>
+        <td><a href="{ch_url}" target="_blank">{ch_url_short}...</a></td>
         <td>Yes</td>
         <td>Just now</td>
         <td>
             <span>Queued {len(job_ids)} jobs</span>
             <fieldset role="group">
                 <button class="outline small"
-                        hx-post="/api/watchlist/{ch['id']}/check"
-                        hx-target="#wl-{ch['id']}"
+                        hx-post="/api/watchlist/{ch_id}/check"
+                        hx-target="#wl-{ch_id}"
                         hx-swap="outerHTML">Check Now</button>
                 <button class="outline secondary small"
-                        hx-delete="/api/watchlist/{ch['id']}"
-                        hx-target="#wl-{ch['id']}"
+                        hx-delete="/api/watchlist/{ch_id}"
+                        hx-target="#wl-{ch_id}"
                         hx-swap="delete"
                         hx-confirm="Remove this channel?">Remove</button>
             </fieldset>

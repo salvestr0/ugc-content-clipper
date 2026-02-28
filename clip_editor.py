@@ -2,6 +2,7 @@
 
 import subprocess
 import json
+import uuid
 from pathlib import Path
 from rich.console import Console
 
@@ -175,7 +176,7 @@ def create_clip(
         if ass_content:
             # Write to CWD with a relative path — avoids Windows drive-letter
             # colon escaping issues with ffmpeg-python's filter graph builder.
-            ass_path = Path(f"_temp_subs_{rank}.ass")
+            ass_path = Path(f"_temp_subs_{rank}_{uuid.uuid4().hex[:8]}.ass")
             ass_path.write_text(ass_content, encoding="utf-8")
             v = v.filter("ass", str(ass_path))
 

@@ -81,6 +81,20 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ── Column allowlists (SQL injection prevention) ──
+
+_JOB_COLUMNS = {
+    "video_id", "video_title", "channel", "duration_seconds", "status",
+    "stage", "error", "config_json", "output_dir", "updated_at",
+}
+_CLIP_COLUMNS = {
+    "rank", "start_seconds", "end_seconds", "duration", "hook", "viral_score",
+    "why_viral", "emotional_trigger", "suggested_caption", "clip_text",
+    "output_path", "status", "user_start_override", "user_end_override",
+}
+_WATCHLIST_COLUMNS = {"channel_url", "channel_name", "enabled", "last_checked_at"}
+
+
 # ── Job helpers ──
 
 async def create_job(db: aiosqlite.Connection, url: str, config_json: str = None) -> dict:
@@ -96,6 +110,9 @@ async def create_job(db: aiosqlite.Connection, url: str, config_json: str = None
 
 async def update_job(db: aiosqlite.Connection, job_id: str, **fields):
     fields["updated_at"] = now_iso()
+    unknown = set(fields) - _JOB_COLUMNS
+    if unknown:
+        raise ValueError(f"Invalid job column(s): {unknown}")
     sets = ", ".join(f"{k}=?" for k in fields)
     vals = list(fields.values()) + [job_id]
     await db.execute(f"UPDATE jobs SET {sets} WHERE id=?", vals)
@@ -159,6 +176,9 @@ async def get_clip(db: aiosqlite.Connection, clip_id: str) -> dict | None:
 
 
 async def update_clip(db: aiosqlite.Connection, clip_id: str, **fields):
+    unknown = set(fields) - _CLIP_COLUMNS
+    if unknown:
+        raise ValueError(f"Invalid clip column(s): {unknown}")
     sets = ", ".join(f"{k}=?" for k in fields)
     vals = list(fields.values()) + [clip_id]
     await db.execute(f"UPDATE clips SET {sets} WHERE id=?", vals)
@@ -189,6 +209,9 @@ async def delete_watchlist(db: aiosqlite.Connection, wid: str):
 
 
 async def update_watchlist(db: aiosqlite.Connection, wid: str, **fields):
+    unknown = set(fields) - _WATCHLIST_COLUMNS
+    if unknown:
+        raise ValueError(f"Invalid watchlist column(s): {unknown}")
     sets = ", ".join(f"{k}=?" for k in fields)
     vals = list(fields.values()) + [wid]
     await db.execute(f"UPDATE watchlist SET {sets} WHERE id=?", vals)
