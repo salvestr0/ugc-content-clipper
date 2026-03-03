@@ -139,8 +139,8 @@ def process_video(url: str, config: dict, output_base: str = "output") -> dict:
 
 
 @click.command()
-@click.option("--url", help="YouTube video URL to process")
-@click.option("--channel", help="YouTube channel URL to process latest videos")
+@click.option("--url", help="Video URL to process (YouTube, Twitch VOD, or Kick.com VOD)")
+@click.option("--channel", help="Channel URL to fetch latest past broadcasts from (YouTube, Twitch, or Kick.com)")
 @click.option("--latest", default=1, help="Number of latest videos to process from channel")
 @click.option("--clips", default=None, type=int, help="Override number of clips per video")
 @click.option("--config", "config_path", default=None, help="Path to config.yaml")

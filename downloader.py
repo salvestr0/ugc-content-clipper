@@ -1,4 +1,4 @@
-"""Module 1: Source Ingestion — Download videos from YouTube via yt-dlp."""
+"""Module 1: Source Ingestion — Download videos from YouTube, Twitch, and Kick.com via yt-dlp."""
 
 import re
 import subprocess
@@ -11,24 +11,37 @@ console = Console()
 _YOUTUBE_URL_RE = re.compile(
     r'^https://(www\.youtube\.com/|m\.youtube\.com/|youtu\.be/|www\.youtube\.com/@)'
 )
+_TWITCH_URL_RE = re.compile(r'^https://(www\.)?twitch\.tv/')
+_KICK_URL_RE   = re.compile(r'^https://kick\.com/')
 
 
-def _validate_youtube_url(url: str) -> None:
-    """Raise ValueError if url is not a recognisable YouTube URL."""
-    if not _YOUTUBE_URL_RE.match(url):
-        raise ValueError(f"Invalid YouTube URL: {url!r}")
+def _detect_platform(url: str) -> str:
+    if _YOUTUBE_URL_RE.match(url): return "youtube"
+    if _TWITCH_URL_RE.match(url):  return "twitch"
+    if _KICK_URL_RE.match(url):    return "kick"
+    raise ValueError(f"Unsupported URL: {url!r}. Expected YouTube, Twitch, or Kick.com.")
+
+
+def _base_yt_dlp_flags(platform: str) -> list[str]:
+    flags = ["--cookies", str(Path(__file__).parent / "cookies.txt")]
+    if platform == "youtube":
+        flags += ["--js-runtimes", "node", "--remote-components", "ejs:github"]
+    return flags
+
+
+def _channel_playlist_url(channel_url: str, platform: str) -> str:
+    url = channel_url.rstrip("/")
+    return f"{url}/videos" if platform == "youtube" else url
 
 
 def get_video_info(url: str) -> dict:
     """Get video metadata without downloading."""
-    _validate_youtube_url(url)
+    platform = _detect_platform(url)
     cmd = [
         "yt-dlp",
         "--dump-json",
         "--no-download",
-        "--js-runtimes", "node",
-        "--remote-components", "ejs:github",
-        "--cookies", str(Path(__file__).parent / "cookies.txt"),
+        *_base_yt_dlp_flags(platform),
         url,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -39,7 +52,7 @@ def get_video_info(url: str) -> dict:
 
 def download_video(url: str, output_dir: str = "output/source") -> dict:
     """
-    Download a YouTube video.
+    Download a video from YouTube, Twitch, or Kick.com.
 
     Returns dict with:
         - filepath: path to downloaded video
@@ -47,7 +60,7 @@ def download_video(url: str, output_dir: str = "output/source") -> dict:
         - duration: video duration in seconds
         - channel: channel name
     """
-    _validate_youtube_url(url)
+    platform = _detect_platform(url)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -73,9 +86,7 @@ def download_video(url: str, output_dir: str = "output/source") -> dict:
         "-o", output_template,
         "--no-playlist",
         "--write-info-json",
-        "--js-runtimes", "node",
-        "--remote-components", "ejs:github",
-        "--cookies", str(Path(__file__).parent / "cookies.txt"),
+        *_base_yt_dlp_flags(platform),
         url,
     ]
 
@@ -109,17 +120,16 @@ def download_video(url: str, output_dir: str = "output/source") -> dict:
 
 
 def get_latest_videos(channel_url: str, count: int = 3) -> list[str]:
-    """Get URLs of the latest N videos from a channel."""
-    _validate_youtube_url(channel_url)
+    """Get URLs of the latest N videos from a channel (YouTube, Twitch, or Kick.com)."""
+    platform = _detect_platform(channel_url)
+    playlist_url = _channel_playlist_url(channel_url, platform)
     cmd = [
         "yt-dlp",
         "--flat-playlist",
         "--dump-json",
         "--playlist-end", str(count),
-        "--js-runtimes", "node",
-        "--remote-components", "ejs:github",
-        "--cookies", str(Path(__file__).parent / "cookies.txt"),
-        f"{channel_url}/videos",
+        *_base_yt_dlp_flags(platform),
+        playlist_url,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
@@ -127,9 +137,14 @@ def get_latest_videos(channel_url: str, count: int = 3) -> list[str]:
 
     videos = []
     for line in result.stdout.strip().split("\n"):
-        if line:
-            data = json.loads(line)
-            videos.append(f"https://www.youtube.com/watch?v={data['id']}")
+        if not line:
+            continue
+        data = json.loads(line)
+        video_url = data.get("webpage_url") or data.get("url")
+        if not video_url and platform == "youtube":
+            video_url = f"https://www.youtube.com/watch?v={data['id']}"
+        if video_url:
+            videos.append(video_url)
 
     return videos
 
@@ -141,4 +156,4 @@ if __name__ == "__main__":
         result = download_video(sys.argv[1])
         print(json.dumps(result, indent=2))
     else:
-        print("Usage: python downloader.py <youtube_url>")
+        print("Usage: python downloader.py <url>")
